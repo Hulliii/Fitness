@@ -1,12 +1,12 @@
-  {
-    "template": {
-      "monday":    "gym",
-      "tuesday":   "football",
-      "wednesday": "gym",
-      "thursday":  "football",
-      "friday":    "rest",
-      "saturday":  "matchday",
-      "sunday":    "rest"
-    },
-    "overrides": {}
-  }
+{
+  "template": {
+    "monday": "gym",
+    "tuesday": "football",
+    "wednesday": "gym",
+    "thursday": "football",
+    "friday": "rest",
+    "saturday": "rest",
+    "sunday": "matchday"
+  },
+  "overrides": {}
+}
