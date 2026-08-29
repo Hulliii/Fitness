@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0d0d0d">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="android-chrome-192x192.png">
 <title>Fitness Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -511,11 +511,29 @@ const DAILY_GOALS = {
 };
 
 const EXERCISES = [
-  'Kniebeuge','Beinpresse','Rumänisches Kreuzheben','Ausfallschritt',
-  'Bankdrücken','Schrägbankdrücken','Schulterdrücken','Dips',
-  'Klimmzüge','Latzug','Rudern (Kabelzug)','Rudern (Langhantel)',
-  'Plank','Crunch','Beinheben','Russian Twist',
-  'Kreuzheben','Bizepscurl','Trizepsdrücken','Nackendrücken'
+  // Gym A — Unterkörper + Explosivität
+  'Kniebeuge (Barbell)',
+  'Romanian Deadlift',
+  'Box Jumps',
+  'Beinpresse',
+  'Nordic Curl',
+  'Wadenheben',
+  'Pallof Press',
+  // Gym B — Oberkörper Push + Pull
+  'Bankdrücken (Barbell)',
+  'Klimmzüge',
+  'Overhead Press',
+  'Sitzrudern (Kabelzug)',
+  'Dips',
+  'Face Pulls',
+  'Plank',
+  // Gym C — Flexible Einheit
+  'Rumänisches Kreuzheben',
+  'Kurzhantel-Rudern',
+  'Schrägbankdrücken (KH)',
+  'Bizepscurls',
+  'Trizeps Pushdown',
+  'Beincurl (Maschine)',
 ];
 
 const DAY_NAMES   = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
