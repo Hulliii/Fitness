@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d0d0d">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Fitness Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+<style>
+:root {
+  --page:   #0d0d0d;
+  --card:   #1a1a19;
+  --input:  #252523;
+  --border: rgba(255,255,255,0.10);
+  --ink:    #ffffff;
+  --ink2:   #c3c2b7;
+  --muted:  #898781;
+  --grid:   #2c2c2a;
+  --base:   #383835;
+  --s1:     #3987e5;
+  --s2:     #199e70;
+  --s3:     #c98500;
+  --s4:     #9085e9;
+  --good:   #0ca30c;
+  --warn:   #fab219;
+  --accent: #3987e5;
+  --r:      12px;
+  --rs:     8px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--page);
+  color: var(--ink);
+  min-height: 100vh;
+  padding: 0 0 64px;
+}
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 0;
+  margin-bottom: 20px;
+}
+.app-header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; }
+.app-header .date { color: var(--ink2); font-size: 0.85rem; }
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+.tab-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 10px 16px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+  letter-spacing: 0.02em;
+}
+.tab-btn:hover { color: var(--ink2); }
+.tab-btn.active { color: var(--ink); border-bottom-color: var(--accent); }
+.tab-panel { display: none; padding: 0 24px; }
+.tab-panel.active { display: block; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.card-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+@media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2,1fr); } }
+.kpi {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px;
+}
+.kpi-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 6px; }
+.kpi-value { font-size: 1.9rem; font-weight: 700; line-height: 1; }
+.kpi-sub   { font-size: 0.75rem; color: var(--ink2); margin-top: 4px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+@media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } }
+.chart-wrap { position: relative; width: 100%; height: 210px; }
+.input-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 0.78rem; color: var(--ink2); font-weight: 500; }
+.field input, .field select {
+  background: var(--input);
+  border: 1px solid var(--border);
+  border-radius: var(--rs);
+  color: var(--ink);
+  font-size: 0.9rem;
+  padding: 8px 11px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.field input:focus, .field select:focus { border-color: var(--accent); }
+.field input::placeholder { color: var(--muted); }
+.btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--rs);
+  padding: 9px 18px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+.btn:hover { opacity: 0.82; }
+.btn-ghost {
+  background: var(--input);
+  color: var(--ink2);
+  border: 1px solid var(--border);
+  border-radius: var(--rs);
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.btn-ghost:hover { border-color: var(--accent); color: var(--ink); }
+.sec { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin: 24px 0 10px; }
+
+/* Bottom Nav */
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  z-index: 100;
+  padding: 0 0 env(safe-area-inset-bottom);
+}
+@media (max-width: 700px) {
+  .bottom-nav { display: flex; }
+  .top-tabs   { display: none !important; }
+  body        { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+}
+.bottom-nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 4px 8px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  gap: 3px;
+  transition: color 0.15s;
+}
+.bottom-nav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+.bottom-nav-btn.active { color: var(--accent); }
+
+/* Modals */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--card);
+  border-radius: var(--r);
+  padding: 20px;
+  width: min(380px, 92vw);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-box video { width: 100%; border-radius: var(--rs); background: #000; }
+
+/* Progress bars */
+.prog-wrap { margin-bottom: 16px; }
+.prog-label { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--ink2); margin-bottom: 5px; }
+.prog-track { height: 8px; background: var(--grid); border-radius: 4px; overflow: hidden; }
+.prog-fill  { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+
+/* Meal items */
+.meal-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--grid);
+  font-size: 0.85rem;
+}
+.meal-item:last-child { border-bottom: none; }
+.meal-name { color: var(--ink); font-weight: 500; }
+.meal-macros { color: var(--muted); font-size: 0.75rem; margin-top: 2px; }
+
+/* Set rows */
+.set-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 1fr auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.set-row span { font-size: 0.78rem; color: var(--muted); text-align: center; }
+
+/* Week plan */
+.wp-cell {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.wp-cell.today { border-color: var(--accent); }
+.wp-day-name { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 4px; }
+.wp-type { font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; }
+.wp-type.gym      { color: var(--s2); }
+.wp-type.football { color: var(--s1); }
+.wp-type.matchday { color: var(--s3); }
+.wp-type.rest     { color: var(--muted); }
+.wp-kcal { font-size: 0.78rem; color: var(--ink2); }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <h1>Fitness Tracker</h1>
+  <span class="date" id="hdr-date"></span>
+</header>
+
+<nav class="tabs top-tabs" id="top-tabs">
+  <button class="tab-btn active" onclick="showTab('essen')">Essen</button>
+  <button class="tab-btn" onclick="showTab('training')">Training</button>
+  <button class="tab-btn" onclick="showTab('gewicht')">Gewicht</button>
+  <button class="tab-btn" onclick="showTab('wochenplan')">Wochenplan</button>
+  <button class="tab-btn" onclick="showTab('dashboard')">Dashboard</button>
+</nav>
+
+<main>
+
+<!-- Tab: Essen -->
+<div class="tab-panel active" id="tab-essen">
+  <div id="essen-progress" style="margin-bottom:20px">
+    <div class="prog-wrap">
+      <div class="prog-label"><span>Kalorien</span><span id="prog-kcal-val">0 / 3650 kcal</span></div>
+      <div class="prog-track"><div class="prog-fill" id="prog-kcal" style="width:0%;background:var(--s1)"></div></div>
+    </div>
+    <div class="prog-wrap">
+      <div class="prog-label"><span>Protein</span><span id="prog-prot-val">0 / 170 g</span></div>
+      <div class="prog-track"><div class="prog-fill" id="prog-prot" style="width:0%;background:var(--s2)"></div></div>
+    </div>
+    <div class="prog-wrap">
+      <div class="prog-label"><span>Kohlenhydrate</span><span id="prog-carb-val">0 / 548 g</span></div>
+      <div class="prog-track"><div class="prog-fill" id="prog-carb" style="width:0%;background:var(--s3)"></div></div>
+    </div>
+    <div class="prog-wrap">
+      <div class="prog-label"><span>Fett</span><span id="prog-fat-val">0 / 77 g</span></div>
+      <div class="prog-track"><div class="prog-fill" id="prog-fat" style="width:0%;background:var(--s4)"></div></div>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;margin-bottom:20px">
+    <button class="btn" onclick="scanBarcode()" style="flex:1">Barcode scannen</button>
+    <button class="btn-ghost" onclick="openManualEntry()" style="flex:1">Manuell eingeben</button>
+  </div>
+  <div id="manual-form" style="display:none" class="card">
+    <div class="card-label">Mahlzeit eintragen</div>
+    <div class="input-grid" style="margin-bottom:12px">
+      <div class="field"><label>Name</label><input id="m-name" type="text" placeholder="z.B. Skyr-Bowl"></div>
+      <div class="field"><label>Kalorien (kcal)</label><input id="m-kcal" type="number" min="0"></div>
+      <div class="field"><label>Protein (g)</label><input id="m-prot" type="number" min="0"></div>
+      <div class="field"><label>Kohlenhydrate (g)</label><input id="m-carb" type="number" min="0"></div>
+      <div class="field"><label>Fett (g)</label><input id="m-fat" type="number" min="0"></div>
+      <div class="field"><label>Menge (g)</label><input id="m-menge" type="number" min="1" value="100"></div>
+    </div>
+    <button class="btn" onclick="saveMeal()">Speichern</button>
+  </div>
+  <div class="sec">Heute</div>
+  <div id="meals-list"></div>
+</div>
+
+<!-- Tab: Training -->
+<div class="tab-panel" id="tab-training">
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-label">Übung hinzufügen</div>
+    <div class="input-grid" style="margin-bottom:12px">
+      <div class="field">
+        <label>Übung</label>
+        <select id="ex-select"><option value="">— wählen —</option></select>
+      </div>
+      <div class="field"><label>Wiederholungen</label><input id="ex-reps" type="number" min="1" value="5"></div>
+      <div class="field"><label>Gewicht (kg)</label><input id="ex-kg" type="number" min="0" step="0.5" placeholder="100"></div>
+    </div>
+    <button class="btn" onclick="addExercise()">Satz hinzufügen</button>
+  </div>
+  <div class="sec">Heutige Session</div>
+  <div id="workout-list"></div>
+  <div style="margin-top:16px">
+    <button class="btn" onclick="saveWorkout()" id="save-workout-btn" style="display:none">Session speichern</button>
+  </div>
+</div>
+
+<!-- Tab: Gewicht -->
+<div class="tab-panel" id="tab-gewicht">
+  <div class="card" style="max-width:320px">
+    <div class="card-label">Gewicht heute</div>
+    <div class="input-grid" style="margin-bottom:12px">
+      <div class="field">
+        <label>Gewicht (kg)</label>
+        <input id="w-kg" type="number" min="40" max="200" step="0.1" placeholder="77.3">
+      </div>
+    </div>
+    <button class="btn" onclick="saveWeight()">Speichern</button>
+    <p id="w-last" style="font-size:0.8rem;color:var(--muted);margin-top:10px"></p>
+  </div>
+</div>
+
+<!-- Tab: Wochenplan -->
+<div class="tab-panel" id="tab-wochenplan">
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-label">Wochenkonfiguration</div>
+    <div id="week-config-form"></div>
+    <button class="btn" style="margin-top:12px" onclick="saveWeekConfig()">Speichern</button>
+  </div>
+  <div class="sec">Diese Woche</div>
+  <div id="week-plan-display"></div>
+</div>
+
+<!-- Tab: Dashboard -->
+<div class="tab-panel" id="tab-dashboard">
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-label">Gewicht</div><div class="kpi-value" id="kpi-weight">—</div><div class="kpi-sub">kg</div></div>
+    <div class="kpi"><div class="kpi-label">Kcal heute</div><div class="kpi-value" id="kpi-kcal">—</div><div class="kpi-sub">kcal</div></div>
+    <div class="kpi"><div class="kpi-label">Protein heute</div><div class="kpi-value" id="kpi-prot">—</div><div class="kpi-sub">g</div></div>
+    <div class="kpi"><div class="kpi-label">Trainings</div><div class="kpi-value" id="kpi-trainings">—</div><div class="kpi-sub">diese Woche</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><div class="card-label">Gewichtsverlauf</div><div class="chart-wrap"><canvas id="chart-weight"></canvas></div></div>
+    <div class="card"><div class="card-label">Kalorien (7 Tage)</div><div class="chart-wrap"><canvas id="chart-kcal"></canvas></div></div>
+  </div>
+  <div class="card">
+    <div class="card-label">Kraftfortschritt</div>
+    <div class="field" style="margin-bottom:12px;max-width:280px">
+      <label>Übung</label>
+      <select id="strength-select" onchange="renderStrengthChart()"><option value="">— wählen —</option></select>
+    </div>
+    <div class="chart-wrap"><canvas id="chart-strength"></canvas></div>
+  </div>
+</div>
+
+</main>
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <button class="bottom-nav-btn active" onclick="showTab('essen')">
+    <svg viewBox="0 0 24 24"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+    Essen
+  </button>
+  <button class="bottom-nav-btn" onclick="showTab('training')">
+    <svg viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 12h12M4 8h2m12 0h2M4 16h2m12 0h2"/></svg>
+    Training
+  </button>
+  <button class="bottom-nav-btn" onclick="showTab('gewicht')">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg>
+    Gewicht
+  </button>
+  <button class="bottom-nav-btn" onclick="showTab('wochenplan')">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+    Woche
+  </button>
+  <button class="bottom-nav-btn" onclick="showTab('dashboard')">
+    <svg viewBox="0 0 24 24"><rect x="3" y="13" width="4" height="8"/><rect x="10" y="9" width="4" height="12"/><rect x="17" y="5" width="4" height="16"/></svg>
+    Stats
+  </button>
+</nav>
+
+<!-- Setup Modal -->
+<div class="modal-overlay" id="setup-modal">
+  <div class="modal-box">
+    <h2 style="margin-bottom:4px;font-size:1.1rem">GitHub Setup</h2>
+    <p style="font-size:0.8rem;color:var(--muted);margin-bottom:16px">Einmalig einrichten — Daten werden lokal gespeichert.</p>
+    <div class="field" style="margin-bottom:12px">
+      <label>Personal Access Token</label>
+      <input type="password" id="setup-token" placeholder="ghp_...">
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label>GitHub Username</label>
+      <input type="text" id="setup-owner" placeholder="dein-username">
+    </div>
+    <div class="field" style="margin-bottom:20px">
+      <label>Repository Name</label>
+      <input type="text" id="setup-repo" placeholder="fitness-tracker">
+    </div>
+    <button class="btn" style="width:100%" onclick="saveSetup()">Speichern & Verbinden</button>
+    <p id="setup-error" style="color:#e05252;font-size:0.8rem;margin-top:10px;display:none"></p>
+  </div>
+</div>
+
+<!-- Scanner Modal -->
+<div class="modal-overlay" id="scanner-modal">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <span style="font-weight:600">Barcode scannen</span>
+      <button class="btn-ghost" onclick="closeScanner()">Schließen</button>
+    </div>
+    <video id="scanner-video" autoplay playsinline></video>
+    <p id="scanner-status" style="font-size:0.8rem;color:var(--muted);margin-top:8px;text-align:center">Kamera wird geladen...</p>
+  </div>
+</div>
+
+<script>
+// ── GitHub API Modul ─────────────────────────────────────────────────
+const GH = (() => {
+  let _token = '', _owner = '', _repo = '';
+
+  function init(token, owner, repo) {
+    _token = token; _owner = owner; _repo = repo;
+    localStorage.setItem('gh_token', token);
+    localStorage.setItem('gh_owner', owner);
+    localStorage.setItem('gh_repo', repo);
+  }
+
+  function isConfigured() {
+    return !!(_token && _owner && _repo);
+  }
+
+  function loadFromStorage() {
+    _token = localStorage.getItem('gh_token') || '';
+    _owner = localStorage.getItem('gh_owner') || '';
+    _repo  = localStorage.getItem('gh_repo')  || '';
+  }
+
+  async function readJSON(path) {
+    const url = `https://api.github.com/repos/${_owner}/${_repo}/contents/${path}`;
+    const res = await fetch(url, {
+      headers: {
+        'Authorization': `token ${_token}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+    if (!res.ok) throw new Error(`GitHub read failed: ${res.status}`);
+    const data = await res.json();
+    const content = JSON.parse(atob(data.content.replace(/\n/g, '')));
+    return { content, sha: data.sha };
+  }
+
+  async function writeJSON(path, content, sha, message) {
+    const url = `https://api.github.com/repos/${_owner}/${_repo}/contents/${path}`;
+    const body = {
+      message,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))),
+      sha
+    };
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${_token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(`GitHub write failed: ${res.status} - ${err.message}`);
+    }
+  }
+
+  loadFromStorage();
+  return { init, isConfigured, readJSON, writeJSON };
+})();
+
+// ── Konstanten ───────────────────────────────────────────────────────
+const DAILY_GOALS = {
+  gym:      { kcal: 3650, protein: 170, carbs: 548, fat: 77 },
+  football: { kcal: 3750, protein: 170, carbs: 585, fat: 77 },
+  matchday: { kcal: 3850, protein: 170, carbs: 625, fat: 77 },
+  rest:     { kcal: 3200, protein: 170, carbs: 460, fat: 77 }
+};
+
+const EXERCISES = [
+  'Kniebeuge','Beinpresse','Rumänisches Kreuzheben','Ausfallschritt',
+  'Bankdrücken','Schrägbankdrücken','Schulterdrücken','Dips',
+  'Klimmzüge','Latzug','Rudern (Kabelzug)','Rudern (Langhantel)',
+  'Plank','Crunch','Beinheben','Russian Twist',
+  'Kreuzheben','Bizepscurl','Trizepsdrücken','Nackendrücken'
+];
+
+const DAY_NAMES   = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+const DAY_LABELS  = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
+const TYPE_LABELS = { gym:'Gym', football:'Fußball', matchday:'Spieltag', rest:'Ruhetag' };
+
+function getTodayType() {
+  const days = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  const today = days[new Date().getDay()];
+  const cfg = JSON.parse(localStorage.getItem('week_config') || 'null');
+  if (!cfg) return 'rest';
+  const dateStr = new Date().toISOString().split('T')[0];
+  return cfg.overrides?.[dateStr] || cfg.template?.[today] || 'rest';
+}
+
+// ── Navigation ───────────────────────────────────────────────────────
+function showTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn, .bottom-nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  document.querySelectorAll(`[onclick="showTab('${id}')"]`).forEach(b => b.classList.add('active'));
+  if (id === 'essen'      && GH.isConfigured()) renderMeals();
+  if (id === 'training')                        renderCurrentWorkout();
+  if (id === 'gewicht'    && GH.isConfigured()) loadLastWeight();
+  if (id === 'wochenplan' && GH.isConfigured()) renderWeekPlan();
+  if (id === 'dashboard'  && GH.isConfigured()) renderDashboard();
+}
+
+document.getElementById('hdr-date').textContent =
+  new Date().toLocaleDateString('de-DE', { weekday:'long', day:'numeric', month:'long' });
+
+// ── Setup ────────────────────────────────────────────────────────────
+async function saveSetup() {
+  const token = document.getElementById('setup-token').value.trim();
+  const owner = document.getElementById('setup-owner').value.trim();
+  const repo  = document.getElementById('setup-repo').value.trim();
+  const err   = document.getElementById('setup-error');
+  err.style.display = 'none';
+  if (!token || !owner || !repo) {
+    err.textContent = 'Alle Felder ausfüllen.';
+    err.style.display = 'block';
+    return;
+  }
+  GH.init(token, owner, repo);
+  try {
+    await GH.readJSON('data.json');
+    document.getElementById('setup-modal').classList.remove('open');
+    location.reload();
+  } catch(e) {
+    err.textContent = 'Verbindung fehlgeschlagen. Token oder Repo-Name prüfen.';
+    err.style.display = 'block';
+  }
+}
+
+if (!GH.isConfigured()) {
+  document.getElementById('setup-modal').classList.add('open');
+}
+
+// ── Essen ────────────────────────────────────────────────────────────
+let _mealBase = null;
+
+function openManualEntry() {
+  const f = document.getElementById('manual-form');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+}
+
+async function saveMeal() {
+  const name  = document.getElementById('m-name').value.trim();
+  const menge = parseFloat(document.getElementById('m-menge').value) || 100;
+  const factor = menge / 100;
+  const base = _mealBase || {
+    kcal:    parseFloat(document.getElementById('m-kcal').value) || 0,
+    protein: parseFloat(document.getElementById('m-prot').value) || 0,
+    carbs:   parseFloat(document.getElementById('m-carb').value) || 0,
+    fat:     parseFloat(document.getElementById('m-fat').value)  || 0
+  };
+  if (!name) { alert('Bitte Name eingeben'); return; }
+
+  const meal = {
+    id:      Date.now().toString(),
+    date:    new Date().toISOString().split('T')[0],
+    time:    new Date().toTimeString().slice(0,5),
+    name,
+    kcal:    Math.round(base.kcal    * (_mealBase ? factor : 1)),
+    protein: Math.round(base.protein * (_mealBase ? factor : 1)),
+    carbs:   Math.round(base.carbs   * (_mealBase ? factor : 1)),
+    fat:     Math.round(base.fat     * (_mealBase ? factor : 1))
+  };
+
+  try {
+    const { content, sha } = await GH.readJSON('data.json');
+    content.meals.push(meal);
+    await GH.writeJSON('data.json', content, sha, `add: meal ${meal.name}`);
+    _mealBase = null;
+    document.getElementById('manual-form').style.display = 'none';
+    ['m-name','m-kcal','m-prot','m-carb','m-fat'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('m-menge').value = '100';
+    await renderMeals();
+  } catch(e) {
+    alert('Fehler beim Speichern: ' + e.message);
+  }
+}
+
+async function renderMeals() {
+  const { content } = await GH.readJSON('data.json');
+  const today = new Date().toISOString().split('T')[0];
+  const todayMeals = content.meals.filter(m => m.date === today);
+
+  const totals = todayMeals.reduce((a, m) => ({
+    kcal: a.kcal + m.kcal, protein: a.protein + m.protein,
+    carbs: a.carbs + m.carbs, fat: a.fat + m.fat
+  }), { kcal:0, protein:0, carbs:0, fat:0 });
+
+  const goals = DAILY_GOALS[getTodayType()];
+
+  const setBar = (id, val, valId, goal, unit) => {
+    document.getElementById(id).style.width = Math.min(100, Math.round(val/goal*100)) + '%';
+    document.getElementById(valId).textContent = `${Math.round(val)} / ${goal} ${unit}`;
+  };
+  setBar('prog-kcal', totals.kcal,    'prog-kcal-val', goals.kcal,    'kcal');
+  setBar('prog-prot', totals.protein, 'prog-prot-val', goals.protein, 'g');
+  setBar('prog-carb', totals.carbs,   'prog-carb-val', goals.carbs,   'g');
+  setBar('prog-fat',  totals.fat,     'prog-fat-val',  goals.fat,     'g');
+
+  const list = document.getElementById('meals-list');
+  if (!todayMeals.length) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:0.85rem">Noch keine Mahlzeiten heute.</p>';
+    return;
+  }
+  list.innerHTML = todayMeals.map(m => `
+    <div class="meal-item">
+      <div>
+        <div class="meal-name">${m.name} <span style="color:var(--muted);font-weight:400">(${m.time})</span></div>
+        <div class="meal-macros">${m.protein}g P · ${m.carbs}g KH · ${m.fat}g F</div>
+      </div>
+      <div style="font-weight:700;color:var(--ink)">${m.kcal} kcal</div>
+    </div>
+  `).join('');
+}
+
+// ── Barcode Scanner ──────────────────────────────────────────────────
+let _scannerCtrl = null;
+
+async function scanBarcode() {
+  document.getElementById('scanner-modal').classList.add('open');
+  document.getElementById('scanner-status').textContent = 'Kamera wird geladen...';
+  const hints = new Map();
+  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+    ZXing.BarcodeFormat.EAN_13,
+    ZXing.BarcodeFormat.EAN_8,
+    ZXing.BarcodeFormat.UPC_A
+  ]);
+  const reader = new ZXing.BrowserMultiFormatReader(hints);
+  _scannerCtrl = reader;
+  try {
+    await reader.decodeFromVideoDevice(null, 'scanner-video', async (result, err) => {
+      if (result) {
+        reader.reset();
+        closeScanner();
+        await lookupBarcode(result.getText());
+      }
+    });
+    document.getElementById('scanner-status').textContent = 'Barcode in Kamera halten...';
+  } catch(e) {
+    document.getElementById('scanner-status').textContent = 'Kamera-Zugriff verweigert.';
+  }
+}
+
+function closeScanner() {
+  if (_scannerCtrl) { _scannerCtrl.reset(); _scannerCtrl = null; }
+  document.getElementById('scanner-modal').classList.remove('open');
+}
+
+async function lookupBarcode(barcode) {
+  try {
+    const res  = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+    const data = await res.json();
+    if (data.status !== 1) { alert('Produkt nicht gefunden. Bitte manuell eingeben.'); return; }
+    const n    = data.product.nutriments;
+    const name = data.product.product_name || 'Unbekanntes Produkt';
+    _mealBase = {
+      kcal:    n['energy-kcal_100g'] || Math.round((n['energy_100g'] || 0) / 4.184),
+      protein: n['proteins_100g']      || 0,
+      carbs:   n['carbohydrates_100g'] || 0,
+      fat:     n['fat_100g']           || 0
+    };
+    document.getElementById('m-name').value  = name;
+    document.getElementById('m-kcal').value  = _mealBase.kcal;
+    document.getElementById('m-prot').value  = _mealBase.protein;
+    document.getElementById('m-carb').value  = _mealBase.carbs;
+    document.getElementById('m-fat').value   = _mealBase.fat;
+    document.getElementById('m-menge').value = '100';
+    document.getElementById('manual-form').style.display = 'block';
+    showTab('essen');
+  } catch(e) {
+    alert('Fehler beim Abrufen: ' + e.message);
+  }
+}
+
+// ── Training ─────────────────────────────────────────────────────────
+let _currentWorkout = [];
+
+(function initExSelect() {
+  const sel = document.getElementById('ex-select');
+  EXERCISES.forEach(ex => {
+    const opt = document.createElement('option');
+    opt.value = opt.textContent = ex;
+    sel.appendChild(opt);
+  });
+})();
+
+function addExercise() {
+  const name = document.getElementById('ex-select').value;
+  const reps = parseInt(document.getElementById('ex-reps').value) || 5;
+  const kg   = parseFloat(document.getElementById('ex-kg').value) || 0;
+  if (!name) { alert('Bitte Übung auswählen'); return; }
+
+  const existing = _currentWorkout.find(e => e.name === name);
+  if (existing) existing.sets.push({ reps, kg });
+  else _currentWorkout.push({ name, sets: [{ reps, kg }] });
+
+  document.getElementById('save-workout-btn').style.display = 'block';
+  renderCurrentWorkout();
+}
+
+function renderCurrentWorkout() {
+  const list = document.getElementById('workout-list');
+  if (!_currentWorkout.length) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:0.85rem">Noch keine Übungen heute.</p>';
+    return;
+  }
+  list.innerHTML = _currentWorkout.map(ex => `
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-weight:600;margin-bottom:8px">${ex.name}</div>
+      ${ex.sets.map((s, i) => `
+        <div class="set-row">
+          <span>Satz ${i+1}</span>
+          <span>${s.reps} Wdh</span>
+          <span>${s.kg} kg</span>
+          <span style="color:var(--muted);font-size:0.75rem">${Math.round(s.reps * s.kg)} Vol.</span>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+async function saveWorkout() {
+  if (!_currentWorkout.length) return;
+  const today = new Date().toISOString().split('T')[0];
+  try {
+    const { content, sha } = await GH.readJSON('data.json');
+    const existing = content.workouts.find(w => w.date === today);
+    if (existing) {
+      _currentWorkout.forEach(ex => {
+        const found = existing.exercises.find(e => e.name === ex.name);
+        if (found) found.sets.push(...ex.sets);
+        else existing.exercises.push(ex);
+      });
+    } else {
+      content.workouts.push({ date: today, exercises: _currentWorkout });
+    }
+    await GH.writeJSON('data.json', content, sha, `add: workout ${today}`);
+    _currentWorkout = [];
+    document.getElementById('save-workout-btn').style.display = 'none';
+    renderCurrentWorkout();
+    alert('Training gespeichert!');
+  } catch(e) {
+    alert('Fehler beim Speichern: ' + e.message);
+  }
+}
+
+// ── Gewicht ──────────────────────────────────────────────────────────
+async function saveWeight() {
+  const kg = parseFloat(document.getElementById('w-kg').value);
+  if (!kg || kg < 40 || kg > 200) { alert('Bitte gültiges Gewicht eingeben'); return; }
+  const today = new Date().toISOString().split('T')[0];
+  try {
+    const { content, sha } = await GH.readJSON('data.json');
+    const existing = content.weight.find(w => w.date === today);
+    if (existing) existing.kg = kg;
+    else content.weight.push({ date: today, kg });
+    await GH.writeJSON('data.json', content, sha, `add: weight ${kg}kg`);
+    document.getElementById('w-last').textContent = `Gespeichert: ${kg} kg`;
+  } catch(e) {
+    alert('Fehler: ' + e.message);
+  }
+}
+
+async function loadLastWeight() {
+  const { content } = await GH.readJSON('data.json');
+  if (!content.weight.length) return;
+  const last = content.weight[content.weight.length - 1];
+  document.getElementById('w-last').textContent = `Zuletzt: ${last.kg} kg (${last.date})`;
+}
+
+// ── Wochenplan ───────────────────────────────────────────────────────
+async function loadWeekConfig() {
+  try {
+    const { content } = await GH.readJSON('week-config.json');
+    localStorage.setItem('week_config', JSON.stringify(content));
+    return content;
+  } catch(e) {
+    return { template: {}, overrides: {} };
+  }
+}
+
+async function renderWeekPlan() {
+  const cfg = await loadWeekConfig();
+
+  document.getElementById('week-config-form').innerHTML = DAY_NAMES.map((day, i) => `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <span style="width:90px;font-size:0.82rem;color:var(--ink2)">${DAY_LABELS[i]}</span>
+      <select id="cfg-${day}" style="background:var(--input);border:1px solid var(--border);border-radius:var(--rs);color:var(--ink);padding:6px 10px;font-size:0.82rem">
+        <option value="gym"      ${cfg.template[day]==='gym'      ?'selected':''}>Gym</option>
+        <option value="football" ${cfg.template[day]==='football' ?'selected':''}>Fußball</option>
+        <option value="matchday" ${cfg.template[day]==='matchday' ?'selected':''}>Spieltag</option>
+        <option value="rest"     ${cfg.template[day]==='rest'     ?'selected':''}>Ruhetag</option>
+      </select>
+    </div>
+  `).join('');
+
+  const todayJsDay = new Date().getDay();
+  document.getElementById('week-plan-display').innerHTML = DAY_NAMES.map((day, i) => {
+    const type   = cfg.template[day] || 'rest';
+    const goals  = DAILY_GOALS[type];
+    const jsDay  = i === 6 ? 0 : i + 1;
+    const isToday = todayJsDay === jsDay;
+    return `
+      <div class="wp-cell ${isToday ? 'today' : ''}">
+        <div class="wp-day-name">${DAY_LABELS[i]}${isToday ? ' — Heute' : ''}</div>
+        <div class="wp-type ${type}">${TYPE_LABELS[type]}</div>
+        <div class="wp-kcal">${goals.kcal} kcal · ${goals.carbs}g KH · ${goals.protein}g Protein</div>
+        ${type === 'gym'      ? '<div style="font-size:0.75rem;color:var(--s2);margin-top:4px">Krafttraining</div>' : ''}
+        ${type === 'matchday' ? '<div style="font-size:0.75rem;color:var(--s3);margin-top:4px">Carb-Loading heute Abend</div>' : ''}
+        ${type === 'football' ? '<div style="font-size:0.75rem;color:var(--s1);margin-top:4px">Leichte Kost, viel trinken</div>' : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+async function saveWeekConfig() {
+  const template = {};
+  DAY_NAMES.forEach(day => { template[day] = document.getElementById('cfg-' + day).value; });
+  const newCfg = { template, overrides: {} };
+  try {
+    const { sha } = await GH.readJSON('week-config.json');
+    await GH.writeJSON('week-config.json', newCfg, sha, 'update: week config');
+    localStorage.setItem('week_config', JSON.stringify(newCfg));
+    alert('Wochenplan gespeichert!');
+    await renderWeekPlan();
+  } catch(e) {
+    alert('Fehler: ' + e.message);
+  }
+}
+
+// ── Dashboard ────────────────────────────────────────────────────────
+let _charts = {};
+
+function destroyChart(id) {
+  if (_charts[id]) { _charts[id].destroy(); delete _charts[id]; }
+}
+
+const CHART_OPTS = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+  scales: {
+    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#898781', font: { size: 10 } } },
+    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#898781', font: { size: 10 } } }
+  }
+};
+
+async function renderDashboard() {
+  const { content } = await GH.readJSON('data.json');
+  const today = new Date().toISOString().split('T')[0];
+
+  const weights = content.weight.sort((a,b) => a.date.localeCompare(b.date));
+  const lastW   = weights[weights.length - 1];
+  document.getElementById('kpi-weight').textContent = lastW ? lastW.kg : '—';
+
+  const todayMeals = content.meals.filter(m => m.date === today);
+  document.getElementById('kpi-kcal').textContent = todayMeals.reduce((s,m) => s+m.kcal, 0) || '—';
+  document.getElementById('kpi-prot').textContent = todayMeals.reduce((s,m) => s+m.protein, 0) || '—';
+
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+  document.getElementById('kpi-trainings').textContent =
+    content.workouts.filter(w => w.date >= weekStart.toISOString().split('T')[0]).length;
+
+  destroyChart('weight');
+  if (weights.length > 1) {
+    _charts['weight'] = new Chart(document.getElementById('chart-weight'), {
+      type: 'line',
+      data: {
+        labels: weights.slice(-30).map(w => w.date.slice(5)),
+        datasets: [{ data: weights.slice(-30).map(w => w.kg), borderColor: '#3987e5', tension: 0.3, pointRadius: 3, pointBackgroundColor: '#3987e5' }]
+      },
+      options: CHART_OPTS
+    });
+  }
+
+  const last7 = Array.from({length:7}, (_,i) => {
+    const d = new Date(); d.setDate(d.getDate() - (6-i));
+    return d.toISOString().split('T')[0];
+  });
+  destroyChart('kcal');
+  _charts['kcal'] = new Chart(document.getElementById('chart-kcal'), {
+    type: 'bar',
+    data: {
+      labels: last7.map(d => d.slice(5)),
+      datasets: [{ data: last7.map(date => content.meals.filter(m=>m.date===date).reduce((s,m)=>s+m.kcal,0)), backgroundColor: 'rgba(57,135,229,0.6)', borderColor: '#3987e5', borderWidth: 1 }]
+    },
+    options: CHART_OPTS
+  });
+
+  const trained = [...new Set(content.workouts.flatMap(w => w.exercises.map(e => e.name)))];
+  const sel = document.getElementById('strength-select');
+  sel.innerHTML = '<option value="">— wählen —</option>';
+  trained.forEach(ex => {
+    const opt = document.createElement('option');
+    opt.value = opt.textContent = ex;
+    sel.appendChild(opt);
+  });
+  if (trained.length) { sel.value = trained[0]; renderStrengthChart(); }
+}
+
+async function renderStrengthChart() {
+  const ex = document.getElementById('strength-select').value;
+  if (!ex) return;
+  const { content } = await GH.readJSON('data.json');
+  const points = content.workouts
+    .filter(w => w.exercises.some(e => e.name === ex))
+    .map(w => ({
+      date: w.date,
+      kg: w.exercises.find(e => e.name === ex).sets.reduce((max,s) => s.kg > max ? s.kg : max, 0)
+    }))
+    .sort((a,b) => a.date.localeCompare(b.date));
+
+  destroyChart('strength');
+  if (points.length < 2) return;
+  _charts['strength'] = new Chart(document.getElementById('chart-strength'), {
+    type: 'line',
+    data: {
+      labels: points.map(p => p.date.slice(5)),
+      datasets: [{ data: points.map(p => p.kg), borderColor: '#199e70', tension: 0.2, pointRadius: 4, pointBackgroundColor: '#199e70' }]
+    },
+    options: CHART_OPTS
+  });
+}
+
+// Beim Start Wochenconfig laden (für getTodayType)
+if (GH.isConfigured()) {
+  loadWeekConfig();
+  renderMeals();
+}
+</script>
+</body>
+</html>
