@@ -264,6 +264,7 @@ body {
 <nav class="tabs top-tabs" id="top-tabs">
   <button class="tab-btn active" onclick="showTab('essen')">Essen</button>
   <button class="tab-btn" onclick="showTab('training')">Training</button>
+  <button class="tab-btn" onclick="showTab('plan')">Plan</button>
   <button class="tab-btn" onclick="showTab('gewicht')">Gewicht</button>
   <button class="tab-btn" onclick="showTab('wochenplan')">Wochenplan</button>
   <button class="tab-btn" onclick="showTab('dashboard')">Dashboard</button>
@@ -332,6 +333,12 @@ body {
   </div>
 </div>
 
+<!-- Tab: Plan -->
+<div class="tab-panel" id="tab-plan">
+  <div id="plan-today-banner" style="margin-bottom:16px"></div>
+  <div id="plan-content"></div>
+</div>
+
 <!-- Tab: Gewicht -->
 <div class="tab-panel" id="tab-gewicht">
   <div class="card" style="max-width:320px">
@@ -391,6 +398,10 @@ body {
   <button class="bottom-nav-btn" onclick="showTab('training')">
     <svg viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 12h12M4 8h2m12 0h2M4 16h2m12 0h2"/></svg>
     Training
+  </button>
+  <button class="bottom-nav-btn" onclick="showTab('plan')">
+    <svg viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+    Plan
   </button>
   <button class="bottom-nav-btn" onclick="showTab('gewicht')">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg>
@@ -557,6 +568,7 @@ function showTab(id) {
   document.querySelectorAll(`[onclick="showTab('${id}')"]`).forEach(b => b.classList.add('active'));
   if (id === 'essen'      && GH.isConfigured()) renderMeals();
   if (id === 'training')                        renderCurrentWorkout();
+  if (id === 'plan')                            renderPlan();
   if (id === 'gewicht'    && GH.isConfigured()) loadLastWeight();
   if (id === 'wochenplan' && GH.isConfigured()) renderWeekPlan();
   if (id === 'dashboard'  && GH.isConfigured()) renderDashboard();
@@ -984,11 +996,121 @@ async function renderStrengthChart() {
   });
 }
 
-// Beim Start Wochenconfig laden (für getTodayType)
+// ── Trainingsplan ────────────────────────────────────────────────────
+const TRAINING_PLANS = {
+  A: {
+    label: 'Gym A — Unterkörper + Explosivität',
+    warmup: '5 min Fahrrad/Ruder + Hüftkreise, Leg Swings, Ausfallschritte',
+    exercises: [
+      { name: 'Kniebeuge (Barbell)',    sets: 4, reps: '4–6',   pause: '3 min',  note: 'Hauptübung — schwer, sauber' },
+      { name: 'Romanian Deadlift',      sets: 3, reps: '6–8',   pause: '2,5 min',note: 'Hamstrings + Gesäß — wichtig für Sprint' },
+      { name: 'Box Jumps',              sets: 4, reps: '5',     pause: '2 min',  note: 'Explosivität — nach Kniebeuge' },
+      { name: 'Beinpresse',             sets: 3, reps: '10–12', pause: '2 min',  note: 'Volumen, weniger ZNS-Last' },
+      { name: 'Nordic Curl',            sets: 3, reps: '4–6',   pause: '2 min',  note: 'Verletzungsprävention Hamstrings (Pflicht)' },
+      { name: 'Wadenheben',             sets: 3, reps: '12–15', pause: '90 s',   note: '' },
+      { name: 'Pallof Press',           sets: 3, reps: '10/Seite', pause: '90 s', note: 'Core-Stabilität' },
+    ]
+  },
+  B: {
+    label: 'Gym B — Oberkörper Push + Pull',
+    warmup: 'Band Pull-Aparts, Schulterkreise, leichte Ruder-Einheit',
+    exercises: [
+      { name: 'Bankdrücken (Barbell)',  sets: 4, reps: '4–6',   pause: '3 min',  note: 'Hauptübung Push' },
+      { name: 'Klimmzüge',             sets: 4, reps: '4–8',   pause: '2,5 min',note: 'Hauptübung Pull' },
+      { name: 'Overhead Press',        sets: 3, reps: '6–8',   pause: '2 min',  note: 'Schulteraufbau, Core-Stabilität' },
+      { name: 'Sitzrudern (Kabelzug)', sets: 3, reps: '8–10',  pause: '2 min',  note: 'Rückendicke' },
+      { name: 'Dips',                  sets: 3, reps: '8–12',  pause: '90 s',   note: 'Trizeps + Brust' },
+      { name: 'Face Pulls',            sets: 3, reps: '12–15', pause: '90 s',   note: 'Schultergesundheit — nicht weglassen' },
+      { name: 'Plank',                 sets: 3, reps: '30–45 s', pause: '60 s', note: 'Seiten-Plank, Hollow Body' },
+    ]
+  },
+  C: {
+    label: 'Gym C — Flexible Einheit (leicht)',
+    warmup: 'Nur wenn Energie gut — sonst Ruhetag',
+    exercises: [
+      { name: 'Rumänisches Kreuzheben', sets: 3, reps: '10–12', pause: '90 s', note: '60–70% Maximalgewicht' },
+      { name: 'Kurzhantel-Rudern',      sets: 3, reps: '10–12/Seite', pause: '90 s', note: '' },
+      { name: 'Schrägbankdrücken (KH)', sets: 3, reps: '10–12', pause: '90 s', note: '' },
+      { name: 'Bizepscurls',            sets: 3, reps: '12–15', pause: '60 s', note: '' },
+      { name: 'Trizeps Pushdown',       sets: 3, reps: '12–15', pause: '60 s', note: '' },
+      { name: 'Beincurl (Maschine)',    sets: 3, reps: '12–15', pause: '60 s', note: 'Aktive Regeneration Hamstrings' },
+    ]
+  }
+};
+
+const DAY_PLAN = {
+  monday:    { type: 'football', label: 'Fußball Training' },
+  tuesday:   { type: 'football', label: 'Fußball Training' },
+  wednesday: { type: 'gym',      label: 'Gym A',  plan: 'A' },
+  thursday:  { type: 'football', label: 'Fußball Training' },
+  friday:    { type: 'gym',      label: 'Gym B',  plan: 'B' },
+  saturday:  { type: 'matchday', label: 'Spieltag' },
+  sunday:    { type: 'rest',     label: 'Regeneration / Mobility' },
+};
+
+function renderPlan() {
+  const days = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  const todayKey = days[new Date().getDay()];
+  const todayPlan = DAY_PLAN[todayKey];
+
+  // Heute-Banner
+  const bannerColor = { gym: 'var(--s2)', football: 'var(--s1)', matchday: 'var(--s3)', rest: 'var(--muted)' };
+  document.getElementById('plan-today-banner').innerHTML = `
+    <div class="card" style="border-color:${bannerColor[todayPlan.type]}">
+      <div class="card-label">Heute</div>
+      <div style="font-size:1.1rem;font-weight:700;color:${bannerColor[todayPlan.type]};margin-bottom:${todayPlan.plan ? '12px' : '0'}">${todayPlan.label}</div>
+      ${todayPlan.plan ? renderPlanTable(TRAINING_PLANS[todayPlan.plan]) : ''}
+    </div>
+  `;
+
+  // Alle Pläne
+  document.getElementById('plan-content').innerHTML = ['A','B','C'].map(key => {
+    const p = TRAINING_PLANS[key];
+    return `
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-label">${p.label}</div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-bottom:14px">Warm-Up: ${p.warmup}</div>
+        ${renderPlanTable(p)}
+      </div>
+    `;
+  }).join('');
+}
+
+function renderPlanTable(p) {
+  return `
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
+        <thead>
+          <tr style="color:var(--muted);text-align:left">
+            <th style="padding:4px 8px 8px 0;font-weight:600">Übung</th>
+            <th style="padding:4px 8px 8px;font-weight:600;white-space:nowrap">Sätze</th>
+            <th style="padding:4px 8px 8px;font-weight:600;white-space:nowrap">Wdh</th>
+            <th style="padding:4px 8px 8px;font-weight:600;white-space:nowrap">Pause</th>
+            <th style="padding:4px 0 8px 8px;font-weight:600">Hinweis</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${p.exercises.map((ex, i) => `
+            <tr style="border-top:1px solid var(--grid)">
+              <td style="padding:8px 8px 8px 0;font-weight:500;color:var(--ink)">${ex.name}</td>
+              <td style="padding:8px;text-align:center;color:var(--ink2)">${ex.sets}</td>
+              <td style="padding:8px;text-align:center;color:var(--ink2);white-space:nowrap">${ex.reps}</td>
+              <td style="padding:8px;text-align:center;color:var(--ink2);white-space:nowrap">${ex.pause}</td>
+              <td style="padding:8px 0 8px 8px;color:var(--muted);font-size:0.75rem">${ex.note}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// Beim Start renderMeals
 if (GH.isConfigured()) {
   loadWeekConfig();
   renderMeals();
 }
+
 </script>
 </body>
 </html>
