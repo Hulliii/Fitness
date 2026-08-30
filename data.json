@@ -19,6 +19,16 @@
       "protein": 11,
       "carbs": 21,
       "fat": 6
+    },
+    {
+      "id": "1788116680512",
+      "date": "2026-08-30",
+      "time": "21:04",
+      "name": "Abendessen (Burger)",
+      "kcal": 1898,
+      "protein": 79,
+      "carbs": 242,
+      "fat": 120
     }
   ],
   "workouts": [],
