@@ -1,5 +1,16 @@
-  {
-    "meals": [],
-    "workouts": [],
-    "weight": []
-  }
+{
+  "meals": [
+    {
+      "id": "1788082286624",
+      "date": "2026-08-30",
+      "time": "11:31",
+      "name": "Porridge",
+      "kcal": 615,
+      "protein": 38,
+      "carbs": 86,
+      "fat": 16
+    }
+  ],
+  "workouts": [],
+  "weight": []
+}
