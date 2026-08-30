@@ -9,6 +9,16 @@
       "protein": 38,
       "carbs": 86,
       "fat": 16
+    },
+    {
+      "id": "1788116618499",
+      "date": "2026-08-30",
+      "time": "21:03",
+      "name": "Donauwelle",
+      "kcal": 183,
+      "protein": 11,
+      "carbs": 21,
+      "fat": 6
     }
   ],
   "workouts": [],
