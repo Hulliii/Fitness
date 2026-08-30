@@ -29,6 +29,16 @@
       "protein": 79,
       "carbs": 242,
       "fat": 120
+    },
+    {
+      "id": "1788118040491",
+      "date": "2026-08-30",
+      "time": "21:27",
+      "name": "Pudding",
+      "kcal": 177,
+      "protein": 20,
+      "carbs": 13,
+      "fat": 5
     }
   ],
   "workouts": [],
