@@ -39,6 +39,16 @@
       "protein": 20,
       "carbs": 13,
       "fat": 5
+    },
+    {
+      "id": "1788161558189",
+      "date": "2026-08-31",
+      "time": "09:32",
+      "name": "Skyr-Bowl",
+      "kcal": 610,
+      "protein": 90,
+      "carbs": 45,
+      "fat": 6
     }
   ],
   "workouts": [],
