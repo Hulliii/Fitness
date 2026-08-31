@@ -59,6 +59,16 @@
       "protein": 62,
       "carbs": 71,
       "fat": 67
+    },
+    {
+      "id": "1788204289567",
+      "date": "2026-08-31",
+      "time": "21:24",
+      "name": "Kuchen",
+      "kcal": 366,
+      "protein": 22,
+      "carbs": 41,
+      "fat": 13
     }
   ],
   "workouts": [],
