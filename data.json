@@ -49,6 +49,16 @@
       "protein": 90,
       "carbs": 45,
       "fat": 6
+    },
+    {
+      "id": "1788204203564",
+      "date": "2026-08-31",
+      "time": "21:23",
+      "name": "Abendessen",
+      "kcal": 1100,
+      "protein": 62,
+      "carbs": 71,
+      "fat": 67
     }
   ],
   "workouts": [],
