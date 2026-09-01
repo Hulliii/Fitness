@@ -74,7 +74,7 @@
       "id": "1788205492602",
       "date": "2026-08-31",
       "time": "21:44",
-      "name": "GummibÃ¤rchen",
+      "name": "GummibÃÂ¤rchen",
       "kcal": 146,
       "protein": 2,
       "carbs": 34,
@@ -92,5 +92,10 @@
     }
   ],
   "workouts": [],
-  "weight": []
+  "weight": [
+    {
+      "date": "2026-09-01",
+      "kg": 77.9
+    }
+  ]
 }
