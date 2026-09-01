@@ -74,7 +74,7 @@
       "id": "1788205492602",
       "date": "2026-08-31",
       "time": "21:44",
-      "name": "GummibÃÂÃÂ¤rchen",
+      "name": "GummibÃÂÃÂÃÂÃÂ¤rchen",
       "kcal": 146,
       "protein": 2,
       "carbs": 34,
@@ -99,6 +99,16 @@
       "protein": 60,
       "carbs": 135,
       "fat": 40
+    },
+    {
+      "id": "1788247471126",
+      "date": "2026-09-01",
+      "time": "09:24",
+      "name": "Skyr Bowl",
+      "kcal": 610,
+      "protein": 90,
+      "carbs": 45,
+      "fat": 6
     }
   ],
   "workouts": [],
