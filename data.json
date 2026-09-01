@@ -74,7 +74,7 @@
       "id": "1788205492602",
       "date": "2026-08-31",
       "time": "21:44",
-      "name": "GummibÃÂÃÂÃÂÃÂ¤rchen",
+      "name": "GummibÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¤rchen",
       "kcal": 146,
       "protein": 2,
       "carbs": 34,
@@ -109,6 +109,16 @@
       "protein": 90,
       "carbs": 45,
       "fat": 6
+    },
+    {
+      "id": "1788251573308",
+      "date": "2026-09-01",
+      "time": "10:32",
+      "name": "Protein Riegel mit Himbeere-Crisp-Geschmack",
+      "kcal": 163,
+      "protein": 12,
+      "carbs": 17,
+      "fat": 5
     }
   ],
   "workouts": [],
